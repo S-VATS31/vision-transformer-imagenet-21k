@@ -8,7 +8,7 @@ from torch.amp import GradScaler
 # TODO: add logger name of ("checkpointing") or "checkpoint"
 
 def load_checkpoint(
-    filename: str,
+    save_path: str,
     model: nn.Module,
     optimizer,
     scheduler,
@@ -32,7 +32,7 @@ def load_checkpoint(
     """
     try:
         # Load checkpoint
-        checkpoint = torch.load(filename, map_location=device)
+        checkpoint = torch.load(save_path, map_location=device)
         
         # Load states
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -43,7 +43,7 @@ def load_checkpoint(
         if scaler is not None and 'scaler_state_dict' in checkpoint:
             scaler.load_state_dict(checkpoint['scaler_state_dict'])
         
-        logger.info(f"Succesfully loaded checkpoint from {filename}")
+        logger.info(f"Succesfully loaded checkpoint from {save_path}")
         
         return {
             'epoch': checkpoint['epoch'], # int 
