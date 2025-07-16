@@ -25,7 +25,12 @@ def train_epoch(
     """Train Vision Transformer for a single epoch.
 
     Args:
-        model (nn.Module):
+        model (nn.Module): Vision Transformer.
+        train_loader (DataLoader): DataLoader containing training_examples.
+        optimizer (optim.Optimizer): Optimizer to update weights.
+        training_args (TrainingArgs): Training hyperparameters.
+        scaler (Optional[GradScaler]): Gradient scaler for bf16/fp16 gradients.
+        epoch (int): Current epoch during training.
 
     Returns:
         Tuple[float, float]: Tuple containing loss and accuracy.
