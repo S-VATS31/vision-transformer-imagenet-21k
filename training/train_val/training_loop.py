@@ -33,7 +33,7 @@ def train(
         epoch (int): Current epoch during training.
 
     Returns:
-        Tuple[float, float]: Tuple containing loss and accuracy.
+        Tuple[float, float]:
             - float: Average loss over epoch.
             - float: Accuracy over epoch.
     """
