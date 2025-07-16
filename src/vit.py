@@ -6,6 +6,7 @@ from typing import Tuple, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.amp import autocast
 from torch.utils.checkpoint import checkpoint
 
 from configs.model_args.model_args_xlarge import ModelArgs
@@ -43,7 +44,7 @@ class PatchEmbeddings(nn.Module):
         Returns:
             torch.Tensor: Output tensor of [B, num_patches + 1, d_model] (includes CLS token).
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             x = x.to(device)
             B, _, H_in, W_in = x.shape
             if H_in != self.img_size or W_in != self.img_size:
@@ -83,7 +84,7 @@ class RMSNorm(nn.Module):
         Returns:
             torch.Tensor: Normalized output tensor with same shape.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             rms = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps) # Apply RMSNorm
             x = x / rms
             x = x * self.gamma # Apply scaling
@@ -132,7 +133,7 @@ class RoPE(nn.Module):
                 - torch.Tensor: Sine values for y-axis of shape [1, 1, num_patches, head_dim//4].
                 - torch.Tensor: Cosine values for y-axis of shape [1, 1, num_patches, head_dim//4].
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             if grid_size is None:
                 grid_size = self.grid_size
 
@@ -176,7 +177,7 @@ class RoPE(nn.Module):
         Returns:
             torch.Tensor: Rotated tensor with shape: [B, T, num_heads, head_dim].
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             # Split head_dim into 4 parts for 2D rotation (x1, x2, y1, y2)
             freq_dim = self.head_dim // 4
             x_reshaped = x.reshape(*x.shape[:-1], 4, freq_dim) # [B, T, num_heads, 4, head_dim//4]
@@ -208,7 +209,7 @@ class RoPE(nn.Module):
         Returns:
             torch.Tensor: Tensor with applied 2D rotary positional embeddings of shape: [B, num_heads, T, head_dim].
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             T = x.size(2)
 
             # Reshape to [B, T, num_heads, head_dim]
@@ -239,7 +240,7 @@ class RoPE(nn.Module):
         Raises:
             ValueError if `d_model` is not divisible by `head_dim`.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             B, T, d_model = x.size()
             if d_model % self.head_dim != 0:
                 raise ValueError(f"d_model ({d_model}) must be divisible by head_dim ({self.head_dim})")
@@ -306,7 +307,7 @@ class GroupedQueryAttention(nn.Module):
             ValueError: If `softmax_attn.shape[-1]` is not equal to `v.shape[-2]`.
             ValueError: If `T` (sequence length) is equal to 0.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             if x.dim() != 3:
                 raise ValueError(f"Input tensor, x, must have 3 dimensions, got: {x.dim()} dimensions")
 
@@ -379,7 +380,7 @@ class GQABlock(nn.Module):
         Returns:
             torch.Tensor: Output tensor with RMSNorm, GQA, Dropout, and residuals applied.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             x_attn = self.dropout(self.attn(self.rms_norm(x)))
             return x + x_attn
 
@@ -407,7 +408,7 @@ class FFN(nn.Module):
         Returns:
             torch.Tensor: Output tensor of shape [B, T, d_model].
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             return self.dropout(self.linear2(F.silu(self.linear1(x)) * self.linear3(x)))
 
 class FFNBlock(nn.Module):
@@ -433,7 +434,7 @@ class FFNBlock(nn.Module):
         Returns:
             torch.Tensor: Output tensor with RMSNorm, FFN, Dropout, and residuals applied.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             x_ffn = self.dropout(self.ffn(self.rms_norm(x)))
             return x + x_ffn
 
@@ -470,7 +471,7 @@ class TransformerEncoder(nn.Module):
         Returns:
             torch.Tensor: Transformed output tensor of same shape.
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             x = self.attn_block(x)
             x = self.ffn_block(x)
             return x
@@ -546,7 +547,7 @@ class VisionTransformer(nn.Module):
         Returns:
             torch.Tensor: Class logits of shape [B, num_classes].
         """
-        with torch.amp.autocast(device_type=device.type, dtype=dtype):
+        with autocast(device_type=device.type, dtype=dtype):
             x = self.dropout(self.patch_embeddings(x)) # [B, num_patches + 1, d_model]
 
             # Pass through transformer layers
