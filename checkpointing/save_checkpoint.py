@@ -15,7 +15,6 @@ def save_checkpoint(
     optimizer,
     scheduler,
     epoch: int,
-    step: int,
     loss: float,
     training_args: TrainingArgs,
     model_args: ModelArgs,
@@ -29,7 +28,6 @@ def save_checkpoint(
         optimizer: PyTorch optimizer.
         scheduler: PyTorch scheduler.
         epoch (int): Current epoch to save checkpoint to.
-        step (int): Current step to save checkpoint to.
         loss (float): Current loss to save checkpoint to.
         training_args (TrainingArgs): Training hyperparameters.
         model_args (ModelArgs): Model hyperparameters.
@@ -43,7 +41,6 @@ def save_checkpoint(
         # Create checkpoint data
         checkpoint_data = {
             'epoch': epoch,
-            'step': step,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'scheduler_state_dict': scheduler.state_dict(),
@@ -57,7 +54,7 @@ def save_checkpoint(
             checkpoint_data['scaler_state_dict'] = scaler.state_dict()
         
         # Create filename
-        filename = "best_model.pt" if is_best else f"checkpoint_step_{step}_epoch{epoch}.pt"
+        filename = "best_model.pth" if is_best else f"checkpoint_epoch_{epoch}.pth"
         
         # Load checkpoint data to filename
         torch.save(checkpoint_data, filename)
