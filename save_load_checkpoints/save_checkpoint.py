@@ -1,4 +1,5 @@
 from typing import Optional
+import os
 
 import torch
 import torch.nn as nn
@@ -8,7 +9,7 @@ from configs.training_args import TrainingArgs
 from configs.model_args.model_args_large import ModelArgs
 
 # TODO: set up logger and add here
-# TODO: set up logger name: ("checkpointing")
+# TODO: set up logger name: ("checkpoints")
 
 def save_checkpoint(
     model: nn.Module,
@@ -20,6 +21,7 @@ def save_checkpoint(
     model_args: ModelArgs,
     scaler: Optional[GradScaler] = None,
     is_best: bool = False,
+    checkpoint_dir: str = "model_checkpoints"
 ) -> str:
     """Save checkpoint to .pth file.
     
@@ -37,6 +39,7 @@ def save_checkpoint(
     Returns:
         str: Returns path to save checkpoint so it can be loaded later.
     """
+    os.makedirs(checkpoint_dir, exist_ok=True)
     try:
         # Create checkpoint data
         checkpoint_data = {
@@ -57,10 +60,12 @@ def save_checkpoint(
         filename = "best_model.pth" if is_best else f"checkpoint_epoch_{epoch}.pth"
         
         # Load checkpoint data to filename
-        torch.save(checkpoint_data, filename)
+        save_path = os.path.join(checkpoint_dir, filename)
+
+        torch.save(checkpoint_data, save_path)
         logger.info(f"Succesfully saved checkpoint to {filename}")
         
-        return filename
+        return save_path
 
     except Exception as e:
         logger.error(f"Failed to save checkpoint as {filename}: {e}")
