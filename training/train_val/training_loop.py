@@ -14,7 +14,7 @@ import tqdm as tqdm
 from configs.training_args import TrainingArgs
 from src.data_augmentation.random_augmentation import random_augmentation
 
-def train_epoch(
+def train(
     model: nn.Module,
     train_loader: DataLoader,
     optimizer: optim.Optimizer,
