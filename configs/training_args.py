@@ -15,6 +15,7 @@ class TrainingArgs:
     fused: bool = True
     warmup_epochs: int = 50
     eta_min: float = 6e-7
+    save_checkpoint_freq: int = 1
     mixup_alpha: float = 0.8
     cutmix_alpha: float = 1.0
     label_smoothing: float = 0.1
