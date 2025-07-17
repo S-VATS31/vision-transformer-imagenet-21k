@@ -1,4 +1,5 @@
 from typing import Optional
+import logging
 import os
 
 import torch
@@ -8,8 +9,9 @@ from torch.amp import GradScaler
 from configs.training_args import TrainingArgs
 from configs.model_args.model_args_large import ModelArgs
 
-# TODO: set up logger and add here
-# TODO: set up logger name: ("checkpoints")
+# Set up logger
+from utils.setup_logger import setup_logger
+checkpoint_logger = setup_logger(name="checkpoint_logger", log_file="training.log", level=logging.INFO)
 
 def save_checkpoint(
     model: nn.Module,
@@ -63,10 +65,10 @@ def save_checkpoint(
         save_path = os.path.join(checkpoint_dir, filename)
 
         torch.save(checkpoint_data, save_path)
-        logger.info(f"Succesfully saved checkpoint to {filename}")
+        checkpoint_logger.info(f"Succesfully saved checkpoint to {filename}")
         
         return save_path
 
     except Exception as e:
-        logger.error(f"Failed to save checkpoint as {filename}: {e}")
+        checkpoint_logger.error(f"Failed to save checkpoint as {filename}: {e}")
         raise
