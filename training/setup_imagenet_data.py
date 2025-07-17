@@ -49,7 +49,7 @@ def setup_data_loaders(
     # Get training dataset
     try:
         train_dataset = datasets.ImageFolder(
-            root="/data/imagenet1k/train",
+            root="/data/imagenet1k/train", # TODO: change to actual dataset file
             transform=train_transform
         )
     except FileNotFoundError:
@@ -60,7 +60,7 @@ def setup_data_loaders(
     # Get validation dataset
     try:
         val_dataset = datasets.ImageFolder(
-            root= "/data/imagenet1k/val",
+            root= "/data/imagenet1k/val", # TODO: change to actual dataset file
             transform=val_transform
         )
     except FileNotFoundError:
