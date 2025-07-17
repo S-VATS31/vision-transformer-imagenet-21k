@@ -77,7 +77,8 @@ def main(
     training_logger.info("DATASET INFORMATION:")
     training_logger.info("=" * 50)
     training_logger.info(f"Number of Training Examples: {len(train_loader)}")
-    training_logger.info(f"Number of Validation Examples: {len(val_loader)}\n")
+    training_logger.info(f"Number of Validation Examples: {len(val_loader)}")
+    training_logger.info(f"Number of Classes: {training_args.num_classes}\n")
 
     training_logger.info("TRAINING INFORMATION:")
     training_logger.info("=" * 50)
