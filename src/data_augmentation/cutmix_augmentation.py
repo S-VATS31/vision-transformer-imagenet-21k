@@ -33,7 +33,7 @@ def cutmix_data(
     if alpha == 0:
         return images, targets, targets, 1.0
 
-    # Get height, width from images tensor
+    # Get batch size, height, and width from images tensor
     B, _, H, W = images.shape
     if H != W:
         error_logger.error(f"H, W must be equal, got {H} != {W}")
