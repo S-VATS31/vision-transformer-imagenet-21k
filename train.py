@@ -17,6 +17,7 @@ from training.training_components.setup_training_components import get_training_
 # Set up logger
 from utils.logging import setup_logger
 training_logger = setup_logger(name="training_logger", log_file="training.log", level=logging.INFO)
+error_logger = setup_logger(name="error_logger", log_file="errors.log", level=logging.ERROR)
 
 def main(
     resume_from_checkpoint: Optional[str] = None, 
@@ -66,9 +67,11 @@ def main(
             start_epoch = checkpoint_info['epoch'] + 1
             best_loss = checkpoint_info['loss']
     except FileNotFoundError as e:
-        training_logger.info(f"Checkpoint: {resume_from_checkpoint} was not found.")
+        error_logger.error(f"Checkpoint: {resume_from_checkpoint} was not found.")
     except RuntimeError as e:
-        training_logger.info(f"Failed to resume from {resume_from_checkpoint}: {e}")
+        error_logger.error(f"Failed to resume from {resume_from_checkpoint}: {e}")
+    except Exception as e:
+        error_logger.error(f"Failed to resume from {resume_from_checkpoint}: {e}")
 
     # Details before training
     training_logger.info("DATASET INFORMATION:")
@@ -77,11 +80,22 @@ def main(
     training_logger.info(f"Number of Validation Examples: {len(val_loader)}\n")
 
     training_logger.info("TRAINING INFORMATION:")
+    training_logger.info("=" * 50)
     training_logger.info(f"Optimizer: {type(optimizer).__name__}")
     training_logger.info(f"Scheduler: {type(scheduler).__name__}")
-    training_logger.info(f"Scaler is available: {bool(scaler)}") # no cuda -> scaler=None -> bool(None) -> False
+    training_logger.info(f"Scaler is available: {bool(scaler)}\n") # no cuda -> scaler=None -> bool(None) -> False
 
-    
+    training_logger.info("TRAINING LENGTH INFORMATION:")
+    training_logger.info("=" * 50)
+    training_logger.info(f"Total epochs: {training_args.epochs}")
+    training_logger.info(f"Warmup epochs: {training_args.warmup_epochs}")
+    training_logger.info(f"Saving regular checkpoint every: {training_args.save_checkpoint_freq} epoch(s)\n")
+
+    training_logger.info("HYPERPARAMETER INFORMATION:")
+    training_logger.info("=" * 50)
+    training_logger.info(f"Learning rate: {training_args.learning_rate}")
+    training_logger.info(f"Batch size: {training_args.batch_size}")
+    training_logger.info(f"Gradient checkpointing being used: {model_args.use_checkpointing}")
 
     # Start training
     training_logger.info(f"Starting training from epoch {start_epoch}")
@@ -144,5 +158,8 @@ def main(
     return train_losses, train_accuracies, val_losses, val_accuracies
 
 if __name__ == "__main__":
-    train_losses, train_accuracies, val_losses, val_accuracies = main()
-    plot_metrics(train_losses, train_accuracies, val_losses, val_accuracies)
+    try:
+        train_losses, train_accuracies, val_losses, val_accuracies = main()
+        plot_metrics(train_losses, train_accuracies, val_losses, val_accuracies)
+    except Exception as e:
+        training_logger.error(f"Failure when running main training loop: {e}")
