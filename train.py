@@ -15,7 +15,7 @@ from save_load_checkpoints.load_checkpoint import load_checkpoint
 from training.training_components.setup_training_components import get_training_components
 
 # Set up logger
-from utils.logging import setup_logger
+from utils.setup_logger import setup_logger
 training_logger = setup_logger(name="training_logger", log_file="training.log", level=logging.INFO)
 error_logger = setup_logger(name="error_logger", log_file="errors.log", level=logging.ERROR)
 
