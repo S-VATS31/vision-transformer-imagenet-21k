@@ -1,11 +1,14 @@
 from configs.setup_env import device
 
 import math
+import logging
 from typing import Tuple
 
 import torch
 
-# TODO: either raise value error or log error and remove print statement (log preferably)
+# Set up logger
+from utils.setup_logger import setup_logger
+error_logger = setup_logger(name="cutmix_logger", log_file="errors.log", level=logging.ERROR)
 
 def cutmix_data(
     images: torch.Tensor,
@@ -33,7 +36,7 @@ def cutmix_data(
     # Get height, width from images tensor
     B, _, H, W = images.shape
     if H != W:
-        print(f"Height ({H}) and width ({W}) of the image must be equal for ViTs.")
+        error_logger.error(f"H, W must be equal, got {H} != {W}")
 
     # Beta distribution (single sample) to get lambda
     lam = torch.distributions.beta.Beta(alpha, alpha).sample().item()
