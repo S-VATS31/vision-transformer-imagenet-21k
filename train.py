@@ -159,8 +159,5 @@ def main(
     return train_losses, train_accuracies, val_losses, val_accuracies
 
 if __name__ == "__main__":
-    try:
-        train_losses, train_accuracies, val_losses, val_accuracies = main()
-        plot_metrics(train_losses, train_accuracies, val_losses, val_accuracies)
-    except Exception as e:
-        training_logger.error(f"Failure when running main training loop: {e}")
+    train_losses, train_accuracies, val_losses, val_accuracies = main()
+    plot_metrics(train_losses, train_accuracies, val_losses, val_accuracies)
