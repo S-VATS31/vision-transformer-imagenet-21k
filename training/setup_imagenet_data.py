@@ -88,10 +88,4 @@ def setup_data_loaders(
         persistent_workers=training_args.persistent_workers
     )
 
-    # TODO: change all print statements to log statements
-    # Dataset statistics
-    print(f"Training samples: {len(train_dataset)}")
-    print(f"Validation samples: {len(val_dataset)}")
-    print(f"Number of classes: {len(train_dataset.classes)}")
-
     return train_loader, val_loader
