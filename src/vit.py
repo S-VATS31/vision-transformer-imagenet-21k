@@ -85,10 +85,7 @@ class RMSNorm(nn.Module):
             torch.Tensor: Normalized output tensor with same shape.
         """
         with autocast(device_type=device.type, dtype=dtype):
-            rms = torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps) # Apply RMSNorm
-            x = x / rms
-            x = x * self.gamma # Apply scaling
-            return x
+            return (x / torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)) * self.gamma
 
 class RoPE(nn.Module):
     """Apply 2D rotary positional embeddings to query, key vectors.
@@ -397,8 +394,7 @@ class GQABlock(nn.Module):
             torch.Tensor: Output tensor with RMSNorm, GQA, Dropout, and residuals applied.
         """
         with autocast(device_type=device.type, dtype=dtype):
-            x_attn = self.dropout(self.attn(self.rms_norm(x)))
-            return x + x_attn
+            return x + self.dropout(self.attn(self.rms_norm(x)))
 
 class FFN(nn.Module):
     """Feed forward network with SwiGLU activation.
@@ -451,8 +447,7 @@ class FFNBlock(nn.Module):
             torch.Tensor: Output tensor with RMSNorm, FFN, Dropout, and residuals applied.
         """
         with autocast(device_type=device.type, dtype=dtype):
-            x_ffn = self.dropout(self.ffn(self.rms_norm(x)))
-            return x + x_ffn
+            return x + self.dropout(self.ffn(self.rms_norm(x)))
 
 class TransformerEncoder(nn.Module):
     """Encoder block where attention block and FFN blocks are stacked.
