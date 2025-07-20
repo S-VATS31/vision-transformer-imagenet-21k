@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.amp import GradScaler
 from torch.utils.data import DataLoader
 
-import tqdm as tqdm
+from tqdm import tqdm
 
 from configs.training_args import TrainingArgs
 from src.data_augmentation.random_augmentation import random_augmentation
