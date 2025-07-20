@@ -291,7 +291,7 @@ class GroupedQueryAttention(nn.Module):
         self.o_proj = nn.Linear(d_model, d_model)
         self.rope_module = rope_module
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, use_sdpa: bool = True) -> torch.Tensor:
         """Perform forward pass of GQA layer with CLS token handling.
 
         Args:
@@ -329,27 +329,43 @@ class GroupedQueryAttention(nn.Module):
             q = self.rope_module.apply_rope_to_tensor(q) # [B, num_heads, T, head_dim]
             k = self.rope_module.apply_rope_to_tensor(k) # [B, query_groups, T, head_dim]
 
-            # Expand k and v to match the number of query heads
-            heads_per_group = self.num_heads // self.query_groups
-            k_expanded = k.unsqueeze(2).expand(B, self.query_groups, heads_per_group, T, self.head_dim).reshape(B, self.num_heads, T, self.head_dim) # [B, num_heads, T, head_dim]
-            v_expanded = v.unsqueeze(2).expand(B, self.query_groups, heads_per_group, T, self.head_dim).reshape(B, self.num_heads, T, self.head_dim) # [B, num_heads, T, head_dim]
+            if not use_sdpa:
+                # Manually expand k and v to match the number of query heads
+                heads_per_group = self.num_heads // self.query_groups
+                k_expanded = (
+                    k.unsqueeze(2).expand(
+                        B, self.query_groups, heads_per_group, T, self.head_dim).reshape(
+                            B, self.num_heads, T, self.head_dim
+                            )
+                    ) # [B, num_heads, T, head_dim]
+                v_expanded = (
+                    v.unsqueeze(2).expand(
+                        B, self.query_groups, heads_per_group, T, self.head_dim).reshape(
+                            B, self.num_heads, T, self.head_dim
+                            )
+                    ) # [B, num_heads, T, head_dim]
+                if q.shape[-1] != k_expanded.shape[-1]:
+                    raise ValueError(
+                        f"q.shape[-1] ({q.shape[-1]}) must be equal to k_expanded.shape[-1] ({k_expanded.shape[-1]}) for matrix multiplication."
+                    )
 
-            # Attention calculation
-            if q.shape[-1] != k_expanded.shape[-1]:
-                raise ValueError(
-                    f"q.shape[-1] ({q.shape[-1]}) must be equal to k_expanded.shape[-1] ({k_expanded.shape[-1]}) for matrix multiplication."
-                )
+                # Compute attention scores
+                attn = torch.matmul(q, k_expanded.transpose(-2, -1)) # [B, num_heads, T, T]
+                scaled_attn = attn / math.sqrt(self.head_dim)
+                softmax_attn = F.softmax(scaled_attn, dim=-1)
 
-            attn = torch.matmul(q, k_expanded.transpose(-2, -1)) # [B, num_heads, T, T]
-            scaled_attn = attn / math.sqrt(self.head_dim)
-            softmax_attn = F.softmax(scaled_attn, dim=-1)
+                if softmax_attn.shape[-1] != v_expanded.shape[-2]:
+                    raise ValueError(
+                        f"softmax_attn.shape[-1] ({softmax_attn.shape[-1]}) must be equal to v_expanded.shape[-2] ({v_expanded.shape[-2]}) for matrix multiplication"
+                    )
 
-            if softmax_attn.shape[-1] != v_expanded.shape[-2]:
-                raise ValueError(
-                    f"softmax_attn.shape[-1] ({softmax_attn.shape[-1]}) must be equal to v_expanded.shape[-2] ({v_expanded.shape[-2]}) for matrix multiplication"
-                )
-
-            attn_out = torch.matmul(softmax_attn, v_expanded)
+                attn_out = torch.matmul(softmax_attn, v_expanded)
+            else:
+                attn_out = F.scaled_dot_product_attention(
+                    q, k, v,
+                    is_causal=False,
+                    enable_gqa=True # Expands kv_heads heads_per_group times
+                ) # [B, num_heads, T, head_dim]
 
             # Concatenate heads
             attn_out = attn_out.transpose(1, 2).contiguous().view(B, T, D)
