@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-import tqdm as tqdm
+from tqdm import tqdm
 
 from configs.training_args import TrainingArgs
 
